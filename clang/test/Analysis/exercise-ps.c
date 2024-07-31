@@ -30,3 +30,14 @@ void f3(void *dest) {
   void *src = __builtin_alloca(5);
   memcpy(dest, src, 1); // expected-warning{{2nd function call argument is a pointer to uninitialized value}}
 }
+
+void pointer_escape(void *);
+
+// Check that processPointerEscapedOnBind() correctly passes type to getSVal in case of memory region is
+// AllocaRegion.
+void f4(void *dest) {
+  char *buf;
+
+  *(void **)&buf = __builtin_alloca(10);
+  pointer_escape(buf); // no crash
+}
