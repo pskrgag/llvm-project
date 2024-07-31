@@ -3488,16 +3488,16 @@ void ExprEngine::VisitAtomicExpr(const AtomicExpr *AE, ExplodedNode *Pred,
 // (4) We are binding to a MemRegion with stack storage that the store
 //     does not understand.
 ProgramStateRef ExprEngine::processPointerEscapedOnBind(
-    ProgramStateRef State, ArrayRef<std::pair<SVal, SVal>> LocAndVals,
+    ProgramStateRef State, ArrayRef<LocSvalType> LocAndVals,
     const LocationContext *LCtx, PointerEscapeKind Kind,
     const CallEvent *Call) {
   SmallVector<SVal, 8> Escaped;
-  for (const std::pair<SVal, SVal> &LocAndVal : LocAndVals) {
+  for (const LocSvalType &LocAndVal : LocAndVals) {
     // Cases (1) and (2).
-    const MemRegion *MR = LocAndVal.first.getAsRegion();
+    const MemRegion *MR = LocAndVal.Location.getAsRegion();
     if (!MR ||
         !isa<StackSpaceRegion, StaticGlobalSpaceRegion>(MR->getMemorySpace())) {
-      Escaped.push_back(LocAndVal.second);
+      Escaped.push_back(LocAndVal.Value);
       continue;
     }
 
@@ -3506,7 +3506,7 @@ ProgramStateRef ExprEngine::processPointerEscapedOnBind(
       if (VR->hasStackParametersStorage() && VR->getStackFrame()->inTopFrame())
         if (const auto *RD = VR->getValueType()->getAsCXXRecordDecl())
           if (!RD->hasTrivialDestructor()) {
-            Escaped.push_back(LocAndVal.second);
+            Escaped.push_back(LocAndVal.Value);
             continue;
           }
 
@@ -3515,11 +3515,17 @@ ProgramStateRef ExprEngine::processPointerEscapedOnBind(
     // represent the binding).
     // Do this only if we know that the store is not supposed to generate the
     // same state.
-    SVal StoredVal = State->getSVal(MR);
-    if (StoredVal != LocAndVal.second)
+    SVal StoredVal;
+
+    if (LocAndVal.Type)
+      StoredVal = State->getSVal(MR, LocAndVal.Type.value());
+    else
+      StoredVal = State->getSVal(MR);
+
+    if (StoredVal != LocAndVal.Value)
       if (State ==
-          (State->bindLoc(loc::MemRegionVal(MR), LocAndVal.second, LCtx)))
-        Escaped.push_back(LocAndVal.second);
+          (State->bindLoc(loc::MemRegionVal(MR), LocAndVal.Value, LCtx)))
+        Escaped.push_back(LocAndVal.Value);
   }
 
   if (Escaped.empty())
@@ -3531,7 +3537,7 @@ ProgramStateRef ExprEngine::processPointerEscapedOnBind(
 ProgramStateRef
 ExprEngine::processPointerEscapedOnBind(ProgramStateRef State, SVal Loc,
                                         SVal Val, const LocationContext *LCtx) {
-  std::pair<SVal, SVal> LocAndVal(Loc, Val);
+  LocSvalType LocAndVal(Loc, Val);
   return processPointerEscapedOnBind(State, LocAndVal, LCtx, PSK_EscapeOnBind,
                                      nullptr);
 }

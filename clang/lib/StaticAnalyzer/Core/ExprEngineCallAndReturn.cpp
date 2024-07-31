@@ -706,7 +706,7 @@ void ExprEngine::evalCall(ExplodedNodeSet &Dst, ExplodedNode *Pred,
   // point.
 
   // Run pointerEscape callback with the newly conjured symbols.
-  SmallVector<std::pair<SVal, SVal>, 8> Escaped;
+  SmallVector<LocSvalType, 8> Escaped;
   for (ExplodedNode *I : dstPostCall) {
     NodeBuilder B(I, Dst, *currBldrCtx);
     ProgramStateRef State = I->getState();
@@ -723,7 +723,8 @@ void ExprEngine::evalCall(ExplodedNodeSet &Dst, ExplodedNode *Pred,
         if (Pointee.isConstQualified() || Pointee->isVoidType())
           continue;
         if (const MemRegion *MR = Call.getArgSVal(Arg).getAsRegion())
-          Escaped.emplace_back(loc::MemRegionVal(MR), State->getSVal(MR, Pointee));
+          Escaped.emplace_back(loc::MemRegionVal(MR),
+                               State->getSVal(MR, Pointee), Pointee);
       }
     }
 

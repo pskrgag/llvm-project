@@ -121,6 +121,17 @@ struct EvalCallOptions {
   EvalCallOptions() {}
 };
 
+/// Triple of Location Value and maybe QualType.
+struct LocSvalType {
+  SVal Location;
+  SVal Value;
+  std::optional<QualType> Type;
+
+  LocSvalType(SVal Location, SVal Value,
+              std::optional<QualType> Type = std::nullopt)
+      : Location(Location), Value(Value), Type(Type) {}
+};
+
 class ExprEngine {
   void anchor();
 
@@ -627,10 +638,11 @@ public:
                              const LocationContext *LC);
 
   /// Call PointerEscape callback when a value escapes as a result of bind.
-  ProgramStateRef processPointerEscapedOnBind(
-      ProgramStateRef State, ArrayRef<std::pair<SVal, SVal>> LocAndVals,
-      const LocationContext *LCtx, PointerEscapeKind Kind,
-      const CallEvent *Call);
+  ProgramStateRef processPointerEscapedOnBind(ProgramStateRef State,
+                                              ArrayRef<LocSvalType> LocAndVals,
+                                              const LocationContext *LCtx,
+                                              PointerEscapeKind Kind,
+                                              const CallEvent *Call);
 
   /// Call PointerEscape callback when a value escapes as a result of
   /// region invalidation.
