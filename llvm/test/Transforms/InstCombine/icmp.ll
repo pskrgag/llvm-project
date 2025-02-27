@@ -5400,3 +5400,55 @@ define i1 @icmp_samesign_logical_or(i32 %In) {
   %V = select i1 %c1, i1 true, i1 %c2
   ret i1 %V
 }
+
+define i16 @icmp_pow2_rem(i16 %0, i16 %1) {
+; CHECK-LABEL: @icmp_pow2_rem(
+; CHECK-NEXT:    [[TMP3:%.*]] = tail call range(i16 0, 17) i16 @llvm.ctpop.i16(i16 [[TMP1:%.*]])
+; CHECK-NEXT:    [[TMP4:%.*]] = icmp samesign ugt i16 [[TMP3]], 1
+; CHECK-NEXT:    br i1 [[TMP4]], label [[TMP8:%.*]], label [[TMP5:%.*]]
+; CHECK:       5:
+; CHECK-NEXT:    [[TMP6:%.*]] = add i16 [[TMP1]], -1
+; CHECK-NEXT:    [[TMP7:%.*]] = and i16 [[TMP0:%.*]], [[TMP6]]
+; CHECK-NEXT:    br label [[TMP8]]
+; CHECK:       8:
+; CHECK-NEXT:    [[TMP9:%.*]] = phi i16 [ [[TMP7]], [[TMP5]] ], [ 0, [[TMP2:%.*]] ]
+; CHECK-NEXT:    ret i16 [[TMP9]]
+;
+  %3 = tail call range(i16 0, 17) i16 @llvm.ctpop.i16(i16 %1)
+  %4 = icmp samesign ugt i16 %3, 1
+  br i1 %4, label %7, label %5
+
+5:
+  %6 = urem i16 %0, %1
+  br label %7
+
+7:
+  %8 = phi i16 [ %6, %5 ], [ 0, %2 ]
+  ret i16 %8
+}
+
+define i16 @icmp_pow2_div(i16 %0, i16 %1) {
+; CHECK-LABEL: @icmp_pow2_div(
+; CHECK-NEXT:    [[TMP3:%.*]] = tail call range(i16 0, 17) i16 @llvm.ctpop.i16(i16 [[TMP1:%.*]])
+; CHECK-NEXT:    [[TMP4:%.*]] = icmp samesign ugt i16 [[TMP3]], 1
+; CHECK-NEXT:    br i1 [[TMP4]], label [[TMP8:%.*]], label [[TMP5:%.*]]
+; CHECK:       5:
+; CHECK-NEXT:    [[TMP6:%.*]] = call range(i16 0, 17) i16 @llvm.cttz.i16(i16 [[TMP1]], i1 true)
+; CHECK-NEXT:    [[TMP7:%.*]] = lshr i16 [[TMP0:%.*]], [[TMP6]]
+; CHECK-NEXT:    br label [[TMP8]]
+; CHECK:       8:
+; CHECK-NEXT:    [[TMP9:%.*]] = phi i16 [ [[TMP7]], [[TMP5]] ], [ 0, [[TMP2:%.*]] ]
+; CHECK-NEXT:    ret i16 [[TMP9]]
+;
+  %3 = tail call range(i16 0, 17) i16 @llvm.ctpop.i16(i16 %1)
+  %4 = icmp samesign ugt i16 %3, 1
+  br i1 %4, label %7, label %5
+
+5:
+  %6 = udiv i16 %0, %1
+  br label %7
+
+7:
+  %8 = phi i16 [ %6, %5 ], [ 0, %2 ]
+  ret i16 %8
+}

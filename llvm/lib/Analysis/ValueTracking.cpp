@@ -2354,6 +2354,9 @@ static bool isImpliedToBeAPowerOfTwoFromCond(const Value *V, bool OrZero,
   // ctpop(V) u< 2
   if (OrZero && Pred == ICmpInst::ICMP_ULT && *RHSC == 2)
     return true;
+  // ctpop(V) u<= 1
+  if (OrZero && Pred == ICmpInst::ICMP_ULE && *RHSC == 1)
+    return true;
   // ctpop(V) == 1
   return Pred == ICmpInst::ICMP_EQ && *RHSC == 1;
 }
