@@ -2,10 +2,16 @@
 // RUN: %clang_cc1 -fms-compatibility -Wgnu-folding-constant -DMS -fsyntax-only -verify=expected,ms %s
 // RUN: %clang_cc1 -std=c99 -pedantic -Wgnu-folding-constant -fsyntax-only -verify=expected,ext %s
 // RUN: %clang_cc1 -xc++ -std=c++11 -pedantic -fsyntax-only -verify=expected,ext,cxx %s
+// RUN: %clang_cc1 -std=gnu11 -DGNU -fsyntax-only -verify=expected %s
+// RUN: %clang_cc1 -std=gnu11 -DGNU_WARN -Wgnu-folding-constant -pedantic -fsyntax-only -verify=expected %s
 
 _Static_assert("foo", "string is nonzero"); // ext-warning {{'_Static_assert' is a C11 extension}}
-#ifndef __cplusplus
-// expected-warning@-2 {{expression is not an integer constant expression; folding it to a constant is a GNU extension}}
+#if !defined(__cplusplus)
+#if defined(GNU_WARN) || defined(MS)
+// expected-warning@-3 {{expression is not an integer constant expression; folding it to a constant is a GNU extension}}
+#elif !defined(GNU)
+// expected-error@-5 {{expression is not an integer constant expression}}
+#endif
 #endif
 
 _Static_assert(1, "1 is nonzero"); // ext-warning {{'_Static_assert' is a C11 extension}}
@@ -88,15 +94,24 @@ _Static_assert(*"1", "");              // ext-warning {{'_Static_assert' is a C1
 _Static_assert("1"[0], "");            // ext-warning {{'_Static_assert' is a C11 extension}}
 _Static_assert(1.0 != 0, "");          // ext-warning {{'_Static_assert' is a C11 extension}}
 _Static_assert(__builtin_strlen("1"), "");  // ext-warning {{'_Static_assert' is a C11 extension}}
-#ifndef __cplusplus
+#if !defined(__cplusplus)
+#if (defined(GNU_WARN) || defined(MS))
+// expected-warning@-10 {{expression is not an integer constant expression; folding it to a constant is a GNU extension}}
 // expected-warning@-9 {{expression is not an integer constant expression; folding it to a constant is a GNU extension}}
-// expected-warning@-8 {{expression is not an integer constant expression; folding it to a constant is a GNU extension}}
-// expected-warning@-8 {{expression is not an integer constant expression; folding it to a constant is a GNU extension}}
-// expected-warning@-8 {{expression is not an integer constant expression; folding it to a constant is a GNU extension}}
-// expected-warning@-8 {{expression is not an integer constant expression; folding it to a constant is a GNU extension}}
-// expected-warning@-8 {{expression is not an integer constant expression; folding it to a constant is a GNU extension}}
+// expected-warning@-9 {{expression is not an integer constant expression; folding it to a constant is a GNU extension}}
+// expected-warning@-9 {{expression is not an integer constant expression; folding it to a constant is a GNU extension}}
+// expected-warning@-9 {{expression is not an integer constant expression; folding it to a constant is a GNU extension}}
+// expected-warning@-9 {{expression is not an integer constant expression; folding it to a constant is a GNU extension}}
 // __builtin_strlen(literal) is considered an integer constant expression
 // and doesn't cause a pedantic warning
+#elif !defined(GNU)
+// expected-error@-19 {{expression is not an integer constant expression}}
+// expected-error@-18 {{expression is not an integer constant expression}}
+// expected-error@-18 {{expression is not an integer constant expression}}
+// expected-error@-18 {{expression is not an integer constant expression}}
+// expected-error@-18 {{expression is not an integer constant expression}}
+// expected-error@-18 {{expression is not an integer constant expression}}
+#endif
 #endif
 
 

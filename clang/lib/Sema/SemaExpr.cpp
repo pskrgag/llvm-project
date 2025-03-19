@@ -17329,6 +17329,13 @@ Sema::VerifyIntegerConstantExpression(Expr *E, llvm::APSInt *Result,
   if (!isa<ConstantExpr>(E))
     E = ConstantExpr::Create(Context, E, EvalResult.Val);
 
+  // Folding non-constant expressions is GNU extensions, so don't allow it
+  // in non-GNU mode.
+  if (Folded && !getLangOpts().CPlusPlus && !getLangOpts().GNUMode) {
+    Diag(E->getExprLoc(), diag::err_expr_not_ice) << 0;
+    return ExprError();
+  }
+
   // In C++11, we can rely on diagnostics being produced for any expression
   // which is not a constant expression. If no diagnostics were produced, then
   // this is a constant expression.
